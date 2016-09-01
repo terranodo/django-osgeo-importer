@@ -1,0 +1,1 @@
+recursive-include osgeo_importer *.js *.css *.png *.eot *.woff *.tff *.svg *.html *.xml *.json

@@ -14,6 +14,7 @@ setup(
     author_email='garnertb@prominentedge.com',
     url='https://github.com/prominentedge/django-osgeo-importer',
     packages=find_packages(exclude=('tests*',)),
+    include_package_data=True,
     package_data = {
         'osgeo_importer': [
             'locale/*/LC_MESSAGES/*',
