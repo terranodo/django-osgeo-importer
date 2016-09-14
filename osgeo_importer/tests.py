@@ -122,7 +122,6 @@ class UploaderTests(DjagnoOsgeoMixin):
         filename = os.path.join(os.path.dirname(__file__), '..', 'importer-test-files', f)
 
         res = self.import_file(filename, configuration_options=configuration_options)
-
         layer_results=[]
 
         for result in res:
@@ -144,8 +143,6 @@ class UploaderTests(DjagnoOsgeoMixin):
                 if not filename.endswith('zip'):
                     self.assertTrue(layer.attributes.count() >= DataSource(filename)[0].num_fields)
 
-                # make sure we have at least one dateTime attribute
-                self.assertTrue('xsd:dateTime' or 'xsd:date' in [n.attribute_type for n in layer.attributes.all()])
                 layer_results.append(layer)
 
         return layer_results[0]
@@ -371,7 +368,7 @@ class UploaderTests(DjagnoOsgeoMixin):
         """
         # TODO: Support time in kmls.
 
-        layer = self.generic_import('us_states.kml')
+        layer = self.generic_import('us_states.kml',configuration_options=[{'index': 0}])
 
     def test_mojstrovka_gpx(self):
         """
@@ -435,6 +432,33 @@ class UploaderTests(DjagnoOsgeoMixin):
         filename = 'point_with_date.geojson'
         f = os.path.join(os.path.dirname(__file__), '..', 'importer-test-files', filename)
         self.generic_import(filename, configuration_options=[{'index': 0,  'convert_to_date': ['date']}])
+
+    def test_wfs(self):
+        """
+        Tests the import from a WFS Endpoint
+        """
+        wfs = 'WFS:http://demo.boundlessgeo.com/geoserver/wfs'
+        gi = OGRImport(wfs)
+        layers = gi.handle(configuration_options=[{'layer_name':'og:bugsites'},
+                                                   {'layer_name':'topp:states'}])
+        for result in layers:
+            layer = Layer.objects.get(name=result[0])
+            self.assertEqual(layer.srid, 'EPSG:4326')
+            self.assertEqual(layer.store, self.datastore.name)
+            self.assertEqual(layer.storeType, 'dataStore')
+
+    def test_arcgisjson(self):
+        """
+        Tests the import from a WFS Endpoint
+        """
+        endpoint = 'http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Hydrography/Watershed173811/FeatureServer/0/query?where=objectid+%3D+objectid&outfields=*&f=json'
+        gi = OGRImport(endpoint)
+        layers = gi.handle(configuration_options=[{'index':0}])
+        for result in layers:
+            layer = Layer.objects.get(name=result[0])
+            self.assertEqual(layer.srid, 'EPSG:4326')
+            self.assertEqual(layer.store, self.datastore.name)
+            self.assertEqual(layer.storeType, 'dataStore')
 
     def import_file(self, in_file, configuration_options=[]):
         """
