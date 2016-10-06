@@ -1,3 +1,2 @@
 include README.md LICENSE
-recursive-exclude osgeo_importer test *migration*
-recursive-include osgeo_importer *.js *.css *.png *.html *.json
+recursive-include osgeo_importer/static/osgeo_importer *.js *.css *.png *.html *.json

@@ -18,11 +18,6 @@ setup(
         'osgeo_importer': [
             'locale/*/LC_MESSAGES/*',
             'templates/osgeo_importer/*',
-            'static/osgeo_importer/*',
-            'static/osgeo_importer/css/*',
-            'static/osgeo_importer/img/*',
-            'static/osgeo_importer/js/*',
-            'static/osgeo_importer/partials/*',
         ],
     },
     license='GPLv3+',
