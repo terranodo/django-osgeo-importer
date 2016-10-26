@@ -3,19 +3,40 @@ import ogr
 import osr
 import gdal
 from .inspectors import GDALInspector, OGRInspector
-from .utils import FileTypeNotAllowed, GdalErrorHandler, load_handler, launder, increment, increment_filename, \
-    raster_import, decode
+from .utils import (  # noqa: F401
+    FileTypeNotAllowed,
+    GdalErrorHandler,
+    load_handler,
+    launder,
+    increment,
+    increment_filename,
+    raster_import,
+    decode
+)
 from .handlers import IMPORT_HANDLERS
 from django.conf import settings
 from django import db
 import logging
+from django.core.files.storage import FileSystemStorage
+
 
 logger = logging.getLogger(__name__)
 ogr.UseExceptions()
 
-
+MEDIA_ROOT = getattr(settings, 'MEDIA_ROOT', FileSystemStorage().location)
 OSGEO_IMPORTER = getattr(settings, 'OSGEO_IMPORTER', 'osgeo_importer.importers.OGRImport')
-RASTER_FILES = getattr(settings, 'RASTER_FILES', '/tmp')
+DEFAULT_SUPPORTED_EXTENSIONS = ['shp', 'shx', 'prj', 'dbf', 'kml', 'geojson', 'json',
+                                'tif', 'tiff', 'gpkg', 'csv', 'zip', 'xml', 'sld']
+VALID_EXTENSIONS = getattr(settings, 'OSGEO_IMPORTER_VALID_EXTENSIONS', DEFAULT_SUPPORTED_EXTENSIONS)
+
+RASTER_FILES = getattr(settings, 'OSGEO_IMPORTER_RASTER_FILES', os.path.join(MEDIA_ROOT, 'osgeo_importer_raster'))
+UPLOAD_DIR = getattr(settings, 'OSGEO_IMPORTER_UPLOAD_DIR', os.path.join(MEDIA_ROOT, 'osgeo_importer_uploads'))
+
+if not os.path.exists(RASTER_FILES):
+    os.makedirs(RASTER_FILES)
+
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
 
 class Import(object):
@@ -29,8 +50,7 @@ class Import(object):
     enabled_handlers = IMPORT_HANDLERS
     source_inspectors = []
     target_inspectors = []
-    valid_extensions = ['gpx', 'geojson', 'json', 'zip', 'tar', 'kml', 'csv', 'shp',
-                        'tif', 'tiff', 'geotiff', 'gpkg']
+    valid_extensions = VALID_EXTENSIONS
 
     def filter_handler_results(self, handler_name):
         """
@@ -85,7 +105,6 @@ class Import(object):
         import method and subsequently to the handlers.
         :return: The response from the import_file method.
         """
-
         layers = self.import_file(configuration_options=configuration_options)
 
         for layer, config in layers:
@@ -223,11 +242,13 @@ class OGRImport(Import):
 
         # Add index for any layers configured by name
         for layer_configuration in configuration_options:
-            lookup = 'layername'
-
-            if lookup not in layer_configuration and 'index' in layer_configuration:
+            if 'layer_name' in layer_configuration:
+                lookup = 'layer_name'
+            elif 'index' in layer_configuration:
                 lookup = 'index'
             else:
+                lookup = None
+                logger.debug('could not find lookup')
                 continue
 
             for datastore_layer in datastore_layers:

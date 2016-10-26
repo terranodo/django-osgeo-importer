@@ -1,3 +1,4 @@
+import logging
 from django import db
 from django.conf import settings
 from osgeo_importer.inspectors import OGRFieldConverter, BigDateOGRFieldConverter
@@ -10,7 +11,9 @@ DEFAULT_IMPORT_HANDLERS = ['osgeo_importer.handlers.FieldConverterHandler',
                            'osgeo_importer.handlers.geoserver.GeoWebCacheHandler',
                            'osgeo_importer.handlers.geoserver.GeoServerBoundsHandler',
                            'osgeo_importer.handlers.geoserver.GenericSLDHandler',
-                           'osgeo_importer.handlers.geonode.GeoNodePublishHandler']
+                           'osgeo_importer.handlers.geonode.GeoNodePublishHandler',
+                           'osgeo_importer.handlers.geoserver.GeoServerStyleHandler',
+                           'osgeo_importer.handlers.geonode.GeoNodeMetadataHandler']
 
 IMPORT_HANDLERS = getattr(settings, 'IMPORT_HANDLERS', DEFAULT_IMPORT_HANDLERS)
 
@@ -104,8 +107,9 @@ class FieldConverterHandler(GetModifiedFieldsMixin, ImportHandlerMixin):
                     if layer_config.get(date_option) == field_to_convert:
                         layer_config[date_option] = new_col.lower()
 
-        except Exception as e:
-            print "Error: %s" % e
+        except Exception:
+            logging.exception(
+                "Error while converting value {!r}".format(field_to_convert))
 
 
 class BigDateFieldConverterHandler(FieldConverterHandler):
